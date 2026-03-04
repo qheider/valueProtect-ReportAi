@@ -1,0 +1,7 @@
+Model rauter
+Azure function app
+
+PS C:\ai-projects\quazi-azure-openai> .\venv\Scripts\Activate.ps1
+(venv) PS C:\ai-projects\quazi-azure-openai> python azureopenaicall.py
+
+home --> resource group--> resource management--> keys and endpoints

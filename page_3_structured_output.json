@@ -1,0 +1,64 @@
+{
+  "A. Valuation Overview": {
+    "Client's Name": "Commercial Bank of Dubai",
+    "Client's Customer Name": "Felicity Stokes And Giles Loren Menezes",
+    "Instruction Date": "Friday, 7th of November, 2025",
+    "Valuation Scope": "Estimate Market Value of the Subject Property(ies)."
+  },
+  "B. Property Description - Location": {
+    "Property Valued": "Residential Apartment",
+    "Sub-Community Name": "The Views",
+    "Project/Building Name": "The Fairways North Tower",
+    "Community Name": "Al Thanyah Third",
+    "Plot Number": "12",
+    "City and Country": "Dubai, United Arab Emirates",
+    "Unit Number": "2607",
+    "Elevation From Sea Level": "2",
+    "Estimate Age (in years)": "17 Years, 0 Month(s)",
+    "Estimated Remaining Life (in years)": "28 Years",
+    "Floor Number(s)": "26",
+    "Makani Number": "15546 76116",
+    "Total Building Floor(s)": "Ground + 26 Building floors",
+    "Latitude & Longitude": "25.089588, 55.170965"
+  },
+  "C. Property Description - External": {
+    "Tenure": "Freehold",
+    "Plot Size": "Not Applicable",
+    "Built-Up Area": "1,547 square feet (Title Deed)",
+    "Accommodation": "2 Bedrooms"
+  },
+  "D. Valuation Details": {
+    "Inspection Type": "Physical Inspection",
+    "Inspection Date": "Saturday, 8th of November, 2025",
+    "Valuation Date": "Saturday, 8th of November, 2025",
+    "Valuation Approach": "Market Approach"
+  },
+  "E. Estimate of Value": {
+    "Estimated Market Value": "AED 3,750,000",
+    "Estimated Market Value (words)": "Three Million Seven Hundred Fifty Thousand Dirhams Only",
+    "Estimated Market Value Rate": "AED 2,424 per square foot built up area",
+    "Estimated Market Rent": "AED 200,000 per annum",
+    "Estimated Price Under the Restricted Marketing Period of 3 Months": "AED 3,375,000",
+    "Estimated Price Under the Restricted Marketing Period of 3 Months (words)": "Three Million Three Hundred Seventy Five Thousand Dirhams Only"
+  },
+  "entities": [
+    "Commercial Bank of Dubai",
+    "Felicity Stokes",
+    "Giles Loren Menezes",
+    "Dubai, United Arab Emirates",
+    "The Fairways North Tower",
+    "The Views",
+    "Al Thanyah Third"
+  ],
+  "dates": [
+    "Friday, 7th of November, 2025",
+    "Saturday, 8th of November, 2025"
+  ],
+  "financial_figures": {
+    "Estimated Market Value": 3750000,
+    "Estimated Market Value Rate per sq ft": 2424,
+    "Estimated Market Rent per annum": 200000,
+    "Estimated Price (3 Months)": 3375000
+  },
+  "paragraph": "Executive Valuation Report Summary for a residential apartment located at The Fairways North Tower, The Views, Al Thanyah Third, Dubai. The property is under freehold tenure, with a built-up area of 1,547 square feet and 2 bedrooms. The estimated market value is AED 3,750,000 and market rent is AED 200,000 per annum, based on a physical inspection conducted on 8th November 2025, using the Market Approach. The client is the Commercial Bank of Dubai and the report was prepared for Felicity Stokes and Giles Loren Menezes."
+}
