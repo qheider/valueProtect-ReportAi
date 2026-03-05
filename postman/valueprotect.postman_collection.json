@@ -1,0 +1,54 @@
+{
+  "info": {
+    "name": "ValueProtect PDF Processor",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Collection for exercising the FastAPI PDF processing endpoint."
+  },
+  "item": [
+    {
+      "name": "Process PDF",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwt_token}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"pdf_url\": \"{{pdf_url}}\",\n  \"prompt\": \"Summarize the document and extract structured data\",\n  \"output_basename\": \"api-sample\"\n}\n"
+        },
+        "url": {
+          "raw": "{{base_url}}/process-pdf",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "process-pdf"
+          ]
+        }
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000"
+    },
+    {
+      "key": "jwt_token",
+      "value": ""
+    },
+    {
+      "key": "pdf_url",
+      "value": "https://example.com/sample.pdf"
+    }
+  ]
+}

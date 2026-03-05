@@ -2,6 +2,8 @@ import os
 import sys
 import json
 from pathlib import Path
+from typing import Any, Dict, Optional
+
 from dotenv import load_dotenv
 from openai import AzureOpenAI
 
@@ -12,6 +14,12 @@ endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
 deployment = os.getenv("AZURE_OPENAI_DEPLOYMENT")
 subscription_key = os.getenv("AZURE_OPENAI_API_KEY")
 api_version = os.getenv("AZURE_OPENAI_API_VERSION")
+
+DEFAULT_ANALYSIS_PROMPT = (
+    "Review the uploaded PDF. Extract structured data as JSON, including any tables, "
+    "financial figures, dates, entities, and key findings. "
+    "If there is a paragraph extract the text of that paragraph and include it in the output JSON under a 'paragraph' key."
+)
 
 
 def validate_environment():
@@ -48,14 +56,20 @@ def prompt_for_pdf_path() -> Path:
     return candidate
 
 
+def _sanitize_basename(raw_name: Optional[str]) -> str:
+    """Return a filesystem-friendly base name for output artifacts."""
+    if not raw_name:
+        return ""
+
+    cleaned = [c if c.isalnum() or c in {"-", "_"} else "-" for c in raw_name.strip()]
+    candidate = "".join(cleaned).strip("-_")
+    return candidate or ""
+
+
 def build_input_blocks(file_id: str, user_prompt: str) -> list[dict]:
     """Prepare the Responses API input payload with the uploaded file."""
     if not user_prompt:
-        user_prompt = (
-            "Review the uploaded PDF. Extract structured data as JSON, including any tables, "
-            "financial figures, dates, entities, and key findings. "
-            "If there is a paragraph extract the text of that paragraph and include it in the output JSON under a 'paragraph' key."
-        )
+        user_prompt = DEFAULT_ANALYSIS_PROMPT
 
     return [
         {
@@ -117,14 +131,19 @@ def extract_response_content(response) -> str:
     return str(response)
 
 
-def main():
-    """Upload a PDF to Azure OpenAI and request structured analysis."""
+def process_pdf_file(
+    pdf_path: Path,
+    user_prompt: Optional[str] = None,
+    output_basename: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Upload a PDF to Azure OpenAI, request analysis, and persist the structured output."""
     validate_environment()
 
-    pdf_path = prompt_for_pdf_path()
-    user_prompt = input(
-        "Enter your analysis request (press Enter for default JSON extraction): "
-    ).strip()
+    if not pdf_path.exists():
+        raise FileNotFoundError(f"PDF file '{pdf_path}' not found.")
+
+    if pdf_path.suffix.lower() != ".pdf":
+        raise ValueError(f"Expected a PDF file, received '{pdf_path.suffix}' instead.")
 
     client = AzureOpenAI(
         api_version=api_version,
@@ -132,15 +151,11 @@ def main():
         api_key=subscription_key,
     )
 
-    print(f"Uploading {pdf_path.name} to Azure OpenAI...")
     with pdf_path.open("rb") as pdf_file:
         uploaded_file = client.files.create(file=pdf_file, purpose="assistants")
 
-    print(f"Uploaded file ID: {uploaded_file.id}")
+    inputs = build_input_blocks(uploaded_file.id, user_prompt or DEFAULT_ANALYSIS_PROMPT)
 
-    inputs = build_input_blocks(uploaded_file.id, user_prompt)
-
-    print("Requesting structured analysis from GPT-4.1...")
     response = client.responses.create(
         model=deployment,
         input=inputs,
@@ -149,24 +164,48 @@ def main():
     )
 
     result_text = extract_response_content(response)
-    print("\n=== Model Output ===")
-    print(result_text)
 
     output_dir = Path("output")
     output_dir.mkdir(parents=True, exist_ok=True)
-    output_file = output_dir / f"{pdf_path.stem}_structured_output.json"
+
+    base_name = _sanitize_basename(output_basename) or pdf_path.stem
+    target_json = output_dir / f"{base_name}_structured_output.json"
+
+    saved_path: Path
+    parsed_payload: Optional[Dict[str, Any]] = None
+    saved_as_json = False
+
     try:
-        parsed = json.loads(result_text)
-        with open(output_file, "w", encoding="utf-8") as f:
-            json.dump(parsed, f, indent=2)
-        print(f"\nSaved structured JSON to {output_file}")
+        parsed_payload = json.loads(result_text)
+        with target_json.open("w", encoding="utf-8") as f:
+            json.dump(parsed_payload, f, indent=2)
+        saved_path = target_json
+        saved_as_json = True
     except json.JSONDecodeError:
-        fallback_path = output_file.with_suffix(".txt")
-        with open(fallback_path, "w", encoding="utf-8") as f:
-            f.write(result_text)
-        print(
-            "\nModel output was not valid JSON. Saved raw text instead for manual review."
-        )
+        fallback_path = target_json.with_suffix(".txt")
+        fallback_path.write_text(result_text, encoding="utf-8")
+        saved_path = fallback_path
+
+    return {
+        "raw_output": result_text,
+        "saved_path": saved_path,
+        "saved_as_json": saved_as_json,
+        "parsed_json": parsed_payload,
+    }
+
+
+def main():
+    """CLI helper to keep backwards compatibility for local runs."""
+    pdf_path = prompt_for_pdf_path()
+    user_prompt = input(
+        "Enter your analysis request (press Enter for default JSON extraction): "
+    ).strip()
+
+    result = process_pdf_file(pdf_path, user_prompt=user_prompt)
+
+    print("\n=== Model Output ===")
+    print(result["raw_output"])
+    print(f"\nSaved output to {result['saved_path']}")
 
 
 if __name__ == "__main__":
