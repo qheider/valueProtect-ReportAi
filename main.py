@@ -33,6 +33,22 @@ JWT_AUDIENCE = os.getenv("JWT_AUDIENCE")
 JWT_ISSUER = os.getenv("JWT_ISSUER")
 PDF_DOWNLOAD_TIMEOUT = float(os.getenv("PDF_DOWNLOAD_TIMEOUT", "60"))
 MAX_FILE_SIZE_MB = float(os.getenv("MAX_PDF_SIZE_MB", "25"))
+PDF_CA_BUNDLE = os.getenv("PDF_CA_BUNDLE")
+
+
+def _resolve_pdf_ssl_verify() -> bool | str:
+    if PDF_CA_BUNDLE:
+        return PDF_CA_BUNDLE
+
+    raw_value = os.getenv("PDF_SSL_VERIFY", "true").strip().lower()
+    if raw_value in {"1", "true", "yes", "on"}:
+        return True
+    if raw_value in {"0", "false", "no", "off"}:
+        return False
+    return True
+
+
+PDF_SSL_VERIFY = _resolve_pdf_ssl_verify()
 
 
 class ProcessPdfRequest(BaseModel):
@@ -60,7 +76,7 @@ async def _download_pdf(source_url: str) -> Path:
     target_path = DOWNLOADS_DIR / f"{uuid.uuid4().hex}.pdf"
 
     try:
-        async with httpx.AsyncClient(timeout=PDF_DOWNLOAD_TIMEOUT) as client:
+        async with httpx.AsyncClient(timeout=PDF_DOWNLOAD_TIMEOUT, verify=PDF_SSL_VERIFY) as client:
             async with client.stream("GET", source_url) as response:
                 try:
                     response.raise_for_status()
@@ -80,6 +96,24 @@ async def _download_pdf(source_url: str) -> Path:
                                 detail="PDF exceeds maximum allowed size.",
                             )
                         file_obj.write(chunk)
+    except httpx.ConnectError as exc:
+        if target_path.exists():
+            target_path.unlink(missing_ok=True)
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=(
+                "Unable to establish a secure connection to the PDF host. "
+                "Certificate verification failed. Configure PDF_CA_BUNDLE with a trusted CA file, "
+                "or set PDF_SSL_VERIFY=false for local testing only."
+            ),
+        ) from exc
+    except httpx.RequestError as exc:
+        if target_path.exists():
+            target_path.unlink(missing_ok=True)
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Failed to download PDF: {exc}",
+        ) from exc
     except Exception:
         if target_path.exists():
             target_path.unlink(missing_ok=True)
