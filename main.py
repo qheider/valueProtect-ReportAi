@@ -149,8 +149,9 @@ async def process_pdf_endpoint(
     pdf_path: Path | None = None
 
     try:
-        pdf_path = await _download_pdf(request.pdf_url)
-        logger.info("Downloaded PDF from %s to %s", request.pdf_url, pdf_path)
+        source_url = str(request.pdf_url)
+        pdf_path = await _download_pdf(source_url)
+        logger.info("Downloaded PDF from %s to %s", source_url, pdf_path)
 
         result = await run_in_threadpool(
             process_pdf_file,
