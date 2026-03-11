@@ -40,6 +40,8 @@ FastAPI wrapper around the existing Azure OpenAI PDF analyzer. The service accep
 | `JWT_AUDIENCE` / `JWT_ISSUER` | *(Optional)* Audience/issuer claims to enforce. |
 | `PDF_DOWNLOAD_TIMEOUT` | *(Optional)* Timeout (seconds) for downloading PDFs (default `60`). |
 | `MAX_PDF_SIZE_MB` | *(Optional)* Reject PDFs larger than this size (default `25`). |
+| `PDF_SSL_VERIFY` | *(Optional)* TLS certificate verification for PDF download (`true` by default). Set `false` only for local testing with self-signed certs. |
+| `PDF_CA_BUNDLE` | *(Optional)* Path to a custom CA bundle file to trust when downloading PDFs over HTTPS. |
 | `PORT` | *(Optional)* Port for `uvicorn` when running via `python main.py` (default `8000`). |
 
 ## Running the API

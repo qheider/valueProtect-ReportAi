@@ -33,6 +33,22 @@ JWT_AUDIENCE = os.getenv("JWT_AUDIENCE")
 JWT_ISSUER = os.getenv("JWT_ISSUER")
 PDF_DOWNLOAD_TIMEOUT = float(os.getenv("PDF_DOWNLOAD_TIMEOUT", "60"))
 MAX_FILE_SIZE_MB = float(os.getenv("MAX_PDF_SIZE_MB", "25"))
+PDF_CA_BUNDLE = os.getenv("PDF_CA_BUNDLE")
+
+
+def _resolve_pdf_ssl_verify() -> bool | str:
+    if PDF_CA_BUNDLE:
+        return PDF_CA_BUNDLE
+
+    raw_value = os.getenv("PDF_SSL_VERIFY", "true").strip().lower()
+    if raw_value in {"1", "true", "yes", "on"}:
+        return True
+    if raw_value in {"0", "false", "no", "off"}:
+        return False
+    return True
+
+
+PDF_SSL_VERIFY = _resolve_pdf_ssl_verify()
 
 
 class ProcessPdfRequest(BaseModel):
@@ -167,8 +183,9 @@ async def process_pdf_endpoint(
     pdf_path: Path | None = None
 
     try:
-        pdf_path = await _download_pdf(request.pdf_url)
-        logger.info("Downloaded PDF from %s to %s", request.pdf_url, pdf_path)
+        source_url = str(request.pdf_url)
+        pdf_path = await _download_pdf(source_url)
+        logger.info("Downloaded PDF from %s to %s", source_url, pdf_path)
 
         result = await run_in_threadpool(
             process_pdf_file,
