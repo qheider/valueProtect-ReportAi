@@ -61,7 +61,7 @@ async def _download_pdf(source_url: str) -> Path:
 
     try:
         async with httpx.AsyncClient(timeout=PDF_DOWNLOAD_TIMEOUT) as client:
-            async with client.stream("GET", source_url) as response:
+            async with client.stream("GET", str(source_url)) as response:
                 try:
                     response.raise_for_status()
                 except httpx.HTTPStatusError as exc:
@@ -80,6 +80,18 @@ async def _download_pdf(source_url: str) -> Path:
                                 detail="PDF exceeds maximum allowed size.",
                             )
                         file_obj.write(chunk)
+    except httpx.ConnectError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Unable to connect to PDF source: {source_url}. Ensure the service is running and accessible.",
+        ) from exc
+    except httpx.TimeoutException as exc:
+        raise HTTPException(
+            status_code=status.HTTP_504_GATEWAY_TIMEOUT,
+            detail=f"Timeout while downloading PDF from {source_url}",
+        ) from exc
+    except HTTPException:
+        raise
     except Exception:
         if target_path.exists():
             target_path.unlink(missing_ok=True)
@@ -112,7 +124,8 @@ def _verify_jwt(
         )
 
     token = authorization.split(" ", 1)[1].strip()
-    decode_kwargs: Dict[str, Any] = {"algorithms": [JWT_ALGORITHM]}
+    # Allow multiple algorithms - adjust based on your token issuer's configuration
+    decode_kwargs: Dict[str, Any] = {"algorithms": ["HS256", "RS256"]}
 
     if JWT_AUDIENCE:
         decode_kwargs["audience"] = JWT_AUDIENCE
@@ -121,9 +134,14 @@ def _verify_jwt(
 
     if JWT_ISSUER:
         decode_kwargs["issuer"] = JWT_ISSUER
+    else:
+        # Disable issuer verification if not configured
+        decode_kwargs.setdefault("options", {})["verify_iss"] = False
 
     try:
         payload = jwt.decode(token, JWT_SECRET, **decode_kwargs)
+        # Log the actual issuer for debugging
+        logger.info("Token decoded successfully. Issuer: %s", payload.get("iss"))
     except JWTError as exc:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
